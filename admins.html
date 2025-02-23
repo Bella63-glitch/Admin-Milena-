@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en"> 
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Admin Panel - Property Upload</title> 
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #000; /* Black background */
+      color: #FFD700; /* Golden text */
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background-color: #000;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #FFD700;
+      color: #FFD700;
+    }
+    h2 {
+      text-align: center;
+      color: #FFD700;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #FFD700;
+      border-radius: 5px;
+      background-color: #222;
+      color: #FFD700;
+    }
+    button {
+      background-color: #FFD700;
+      color: #000;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #e6c200;
+    }
+    .success-message,
+    .error-message {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .success-message {
+      color: #FFD700;
+    }
+    .error-message {
+      color: #FFD700;
+    }
+  </style> 
+ </head> 
+ <body> 
+  <div class="container"> 
+   <h2>Upload New Property</h2> 
+   <form id="propertyForm"> <label for="propertyName">Property Name:</label> 
+    <input type="text" id="propertyName" required> <label for="category">Category:</label> 
+    <input type="text" id="category" required> <label for="subcategory">Subcategory:</label> 
+    <input type="text" id="subcategory" required> <label for="price">Price:</label> 
+    <input type="number" id="price" required> <label for="location">Location:</label> 
+    <input type="text" id="location" required> <label for="propertyImage">Property Image:</label> 
+    <input type="file" id="propertyImage" accept="image/*" required> <button type="submit" id="uploadButton">Upload Property</button> 
+   </form> 
+   <div class="success-message" id="successMessage" style="display:none;">
+     Property uploaded successfully! 
+   </div> 
+   <div class="error-message" id="errorMessage" style="display:none;">
+     Error uploading property. Please try again. 
+   </div> 
+  </div> 
+  <script>
+    // Backendless credentials and endpoints
+    const APP_ID = "C47C660A-86F5-425E-8548-2747CA67D530";
+    const REST_API_KEY = "28473621-4F3B-43A6-AA75-91890ACF1319";
+    
+    // The file storage endpoint: uploads to the "properties" folder
+    // The data endpoint for the "properties" table
+    const DATA_API_URL = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/data/properties`;
+
+    document.getElementById('propertyForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      uploadProperty();
+    });
+
+    async function uploadProperty() {
+      // Retrieve form values
+      const propertyName = document.getElementById('propertyName').value;
+      const category = document.getElementById('category').value;
+      const subcategory = document.getElementById('subcategory').value;
+      const price = document.getElementById('price').value;
+      const location = document.getElementById('location').value;
+      const propertyImage = document.getElementById('propertyImage').files[0];
+
+      if (!propertyImage) {
+        document.getElementById('errorMessage').textContent = "No image selected.";
+        document.getElementById('errorMessage').style.display = "block";
+        return;
+      }
+
+      try {
+        // Prepare a unique filename by prepending a timestamp
+        const timestamp = Date.now();
+        const filename = timestamp + "_" + propertyImage.name;
+        const fileUploadUrl = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/files/properties/${filename}?overwrite=true`;
+
+        // Upload the image file to Backendless File Storage
+        const fileUploadResponse = await fetch(fileUploadUrl, {
+          method: 'POST',
+          headers: {
+            "Content-Type": propertyImage.type
+          },
+          body: propertyImage
+        });
+
+        if (!fileUploadResponse.ok) {
+          throw new Error("File upload failed");
+        }
+
+        const fileUploadResult = await fileUploadResponse.json();
+        // The response is expected to include a "fileURL" property.
+        const fileURL = fileUploadResult.fileURL || fileUploadResult;
+
+        // Construct the property data record with the image URL
+        const propertyData = {
+          name: propertyName,
+          category: category,
+          subcategory: subcategory,
+          price: price,
+          location: location,
+          imageUrl: fileURL
+        };
+
+        // Insert the property record into the Backendless Data table
+        const dataResponse = await fetch(DATA_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(propertyData)
+        });
+
+        if (!dataResponse.ok) {
+          throw new Error("Failed to save property data");
+        }
+
+        const dataResult = await dataResponse.json();
+        console.log("Property upload successful:", dataResult);
+
+        document.getElementById('successMessage').textContent = "Property uploaded successfully!";
+        document.getElementById('successMessage').style.display = "block";
+        document.getElementById('errorMessage').style.display = "none";
+        document.getElementById('propertyForm').reset();
+      } catch (error) {
+        console.error("Error uploading property:", error);
+        document.getElementById('errorMessage').textContent = "Error uploading property: " + error.message;
+        document.getElementById('errorMessage').style.display = "block";
+        document.getElementById('successMessage').style.display = "none";
+      }
+    }
+  </script> 
+ 
+</body></html>
