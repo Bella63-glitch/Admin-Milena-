@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="en"> 
- <head> 
-  <meta charset="UTF-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>Admin Panel - Property Upload</title> 
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Property Upload</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #000; /* Black background */
-      color: #FFD700; /* Golden text */
+      background-color: #000;
+      color: #FFD700;
       padding: 20px;
     }
     .container {
@@ -29,7 +29,8 @@
     }
     input[type="text"],
     input[type="number"],
-    input[type="file"] {
+    input[type="file"],
+    select {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -62,32 +63,46 @@
     .error-message {
       color: #FFD700;
     }
-  </style> 
- </head> 
- <body> 
-  <div class="container"> 
-   <h2>Upload New Property</h2> 
-   <form id="propertyForm"> <label for="propertyName">Property Name:</label> 
-    <input type="text" id="propertyName" required> <label for="category">Category:</label> 
-    <input type="text" id="category" required> <label for="subcategory">Subcategory:</label> 
-    <input type="text" id="subcategory" required> <label for="price">Price:</label> 
-    <input type="number" id="price" required> <label for="location">Location:</label> 
-    <input type="text" id="location" required> <label for="propertyImage">Property Image:</label> 
-    <input type="file" id="propertyImage" accept="image/*" required> <button type="submit" id="uploadButton">Upload Property</button> 
-   </form> 
+  </style>
+ </head>
+ <body>
+  <div class="container">
+   <h2>Upload New Property</h2>
+   <form id="propertyForm">
+     <label for="propertyName">Property Name:</label>
+     <input type="text" id="propertyName" required>
+
+     <label for="propertyType">Property Type:</label>
+     <select id="propertyType" required>
+       <option value="">Select Type</option>
+       <option value="Apartment">Apartment</option>
+       <option value="Villa">Villa</option>
+       <option value="Townhouse">Townhouse</option>
+       <option value="Condominium">Condominium</option>
+     </select>
+
+     <label for="price">Price:</label>
+     <input type="number" id="price" required>
+
+     <label for="location">Location:</label>
+     <input type="text" id="location" required>
+
+     <label for="propertyImage">Property Image:</label>
+     <input type="file" id="propertyImage" accept="image/*" required>
+
+     <button type="submit" id="uploadButton">Upload Property</button>
+   </form>
    <div class="success-message" id="successMessage" style="display:none;">
-     Property uploaded successfully! 
-   </div> 
+     Property uploaded successfully!
+   </div>
    <div class="error-message" id="errorMessage" style="display:none;">
-     Error uploading property. Please try again. 
-   </div> 
-  </div> 
+     Error uploading property. Please try again.
+   </div>
+  </div>
   <script>
     // Backendless credentials and endpoints
     const APP_ID = "C47C660A-86F5-425E-8548-2747CA67D530";
     const REST_API_KEY = "28473621-4F3B-43A6-AA75-91890ACF1319";
-    
-    // The file storage endpoint: uploads to the "properties" folder
     // The data endpoint for the "properties" table
     const DATA_API_URL = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/data/properties`;
 
@@ -99,8 +114,7 @@
     async function uploadProperty() {
       // Retrieve form values
       const propertyName = document.getElementById('propertyName').value;
-      const category = document.getElementById('category').value;
-      const subcategory = document.getElementById('subcategory').value;
+      const propertyType = document.getElementById('propertyType').value;
       const price = document.getElementById('price').value;
       const location = document.getElementById('location').value;
       const propertyImage = document.getElementById('propertyImage').files[0];
@@ -137,8 +151,7 @@
         // Construct the property data record with the image URL
         const propertyData = {
           name: propertyName,
-          category: category,
-          subcategory: subcategory,
+          type: propertyType,
           price: price,
           location: location,
           imageUrl: fileURL
@@ -171,6 +184,6 @@
         document.getElementById('successMessage').style.display = "none";
       }
     }
-  </script> 
- 
-</body></html>
+  </script>
+ </body>
+</html>
