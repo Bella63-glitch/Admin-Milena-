@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - Property Upload</title>
+<html lang="en"> 
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Admin Panel - Property Upload</title> 
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -63,48 +63,50 @@
     .error-message {
       color: #FFD700;
     }
-  </style>
- </head>
- <body>
-  <div class="container">
-   <h2>Upload New Property</h2>
-   <form id="propertyForm">
-     <label for="propertyName">Property Name:</label>
-     <input type="text" id="propertyName" required>
+  </style> 
+ </head> 
+ <body> 
+  <div class="container"> 
+   <h2>Upload New Property</h2> 
+   <form id="propertyForm"> 
+    <label for="propertyName">Property Name:</label> 
+    <input type="text" id="propertyName" required> 
 
-     <label for="propertyType">Property Type:</label>
-     <select id="propertyType" required>
-       <option value="">Select Type</option>
-       <option value="Apartment">Apartment</option>
-       <option value="Villa">Villa</option>
-       <option value="Townhouse">Townhouse</option>
-       <option value="Condominium">Condominium</option>
-     </select>
+    <label for="propertyType">Property Type:</label> 
+    <select id="propertyType" required> 
+      <option value="">Select Type</option> 
+      <option value="Apartment">Apartment</option> 
+      <option value="Villa">Villa</option> 
+      <option value="Townhouse">Townhouse</option> 
+      <option value="Condominium">Condominium</option> 
+    </select> 
 
-     <label for="price">Price:</label>
-     <input type="number" id="price" required>
+    <label for="price">Price:</label> 
+    <input type="number" id="price" required> 
 
-     <label for="location">Location:</label>
-     <input type="text" id="location" required>
+    <label for="location">Location:</label> 
+    <input type="text" id="location" required> 
 
-     <label for="propertyImage">Property Image:</label>
-     <input type="file" id="propertyImage" accept="image/*" required>
+    <label for="propertyImage">Property Image:</label> 
+    <input type="file" id="propertyImage" accept="image/*" required> 
 
-     <button type="submit" id="uploadButton">Upload Property</button>
-   </form>
+    <button type="submit" id="uploadButton">Upload Property</button> 
+   </form> 
+
    <div class="success-message" id="successMessage" style="display:none;">
-     Property uploaded successfully!
-   </div>
+     Property uploaded successfully! 
+   </div> 
    <div class="error-message" id="errorMessage" style="display:none;">
-     Error uploading property. Please try again.
-   </div>
-  </div>
+     Error uploading property. Please try again. 
+   </div> 
+  </div> 
+
   <script>
     // Backendless credentials and endpoints
     const APP_ID = "C47C660A-86F5-425E-8548-2747CA67D530";
     const REST_API_KEY = "28473621-4F3B-43A6-AA75-91890ACF1319";
-    // The data endpoint for the "properties" table
-    const DATA_API_URL = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/data/properties`;
+    // The data endpoint for the "Properties" table (Ensure it's case-sensitive)
+    const DATA_API_URL = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/data/Properties`;
 
     document.getElementById('propertyForm').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -113,15 +115,14 @@
 
     async function uploadProperty() {
       // Retrieve form values
-      const propertyName = document.getElementById('propertyName').value;
-      const propertyType = document.getElementById('propertyType').value;
-      const price = document.getElementById('price').value;
-      const location = document.getElementById('location').value;
+      const propertyName = document.getElementById('propertyName').value.trim();
+      const propertyType = document.getElementById('propertyType').value.trim();
+      const price = document.getElementById('price').value.trim();
+      const location = document.getElementById('location').value.trim();
       const propertyImage = document.getElementById('propertyImage').files[0];
 
       if (!propertyImage) {
-        document.getElementById('errorMessage').textContent = "No image selected.";
-        document.getElementById('errorMessage').style.display = "block";
+        showError("No image selected.");
         return;
       }
 
@@ -129,14 +130,12 @@
         // Prepare a unique filename by prepending a timestamp
         const timestamp = Date.now();
         const filename = timestamp + "_" + propertyImage.name;
-        const fileUploadUrl = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/files/properties/${filename}?overwrite=true`;
+        const fileUploadUrl = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/files/properties/${filename}`;
 
         // Upload the image file to Backendless File Storage
         const fileUploadResponse = await fetch(fileUploadUrl, {
           method: 'POST',
-          headers: {
-            "Content-Type": propertyImage.type
-          },
+          headers: { "Content-Type": propertyImage.type },
           body: propertyImage
         });
 
@@ -144,15 +143,13 @@
           throw new Error("File upload failed");
         }
 
-        const fileUploadResult = await fileUploadResponse.json();
-        // The response is expected to include a "fileURL" property.
-        const fileURL = fileUploadResult.fileURL || fileUploadResult;
+        const fileURL = await fileUploadResponse.text(); // Get URL as text
 
         // Construct the property data record with the image URL
         const propertyData = {
           name: propertyName,
           type: propertyType,
-          price: price,
+          price: parseFloat(price), // Ensure price is a number
           location: location,
           imageUrl: fileURL
         };
@@ -170,20 +167,27 @@
           throw new Error("Failed to save property data");
         }
 
-        const dataResult = await dataResponse.json();
-        console.log("Property upload successful:", dataResult);
+        console.log("Property uploaded successfully:", await dataResponse.json());
 
-        document.getElementById('successMessage').textContent = "Property uploaded successfully!";
-        document.getElementById('successMessage').style.display = "block";
-        document.getElementById('errorMessage').style.display = "none";
+        showSuccess("Property uploaded successfully!");
         document.getElementById('propertyForm').reset();
       } catch (error) {
         console.error("Error uploading property:", error);
-        document.getElementById('errorMessage').textContent = "Error uploading property: " + error.message;
-        document.getElementById('errorMessage').style.display = "block";
-        document.getElementById('successMessage').style.display = "none";
+        showError(error.message);
       }
     }
-  </script>
+
+    function showSuccess(message) {
+      document.getElementById('successMessage').textContent = message;
+      document.getElementById('successMessage').style.display = "block";
+      document.getElementById('errorMessage').style.display = "none";
+    }
+
+    function showError(message) {
+      document.getElementById('errorMessage').textContent = "Error: " + message;
+      document.getElementById('errorMessage').style.display = "block";
+      document.getElementById('successMessage').style.display = "none";
+    }
+  </script> 
  </body>
 </html>
