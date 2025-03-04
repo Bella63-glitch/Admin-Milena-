@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en"> 
- <head> 
-  <meta charset="UTF-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>Admin Panel - Property Upload</title> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel - Property Upload (Supabase)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -58,136 +58,151 @@
       font-weight: bold;
     }
     .success-message {
-      color: #FFD700;
+      color: #00ff00; /* greenish for success */
     }
     .error-message {
-      color: #FFD700;
+      color: #ff0000; /* red for error */
     }
-  </style> 
- </head> 
- <body> 
-  <div class="container"> 
-   <h2>Upload New Property</h2> 
-   <form id="propertyForm"> 
-    <label for="propertyName">Property Name:</label> 
-    <input type="text" id="propertyName" required> 
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Upload New Property</h2>
+    <form id="propertyForm">
+      <label for="propertyName">Property Name:</label>
+      <input type="text" id="propertyName" required />
 
-    <label for="propertyType">Property Type:</label> 
-    <select id="propertyType" required> 
-      <option value="">Select Type</option> 
-      <option value="Apartment">Apartment</option> 
-      <option value="Villa">Villa</option> 
-      <option value="Townhouse">Townhouse</option> 
-      <option value="Condominium">Condominium</option> 
-    </select> 
+      <label for="propertyType">Property Type:</label>
+      <select id="propertyType" required>
+        <option value="">Select Type</option>
+        <option value="Apartment">Apartment</option>
+        <option value="Villa">Villa</option>
+        <option value="Townhouse">Townhouse</option>
+        <option value="Condominium">Condominium</option>
+      </select>
 
-    <label for="price">Price:</label> 
-    <input type="number" id="price" required> 
+      <label for="price">Price:</label>
+      <input type="number" id="price" required />
 
-    <label for="location">Location:</label> 
-    <input type="text" id="location" required> 
+      <label for="location">Location:</label>
+      <input type="text" id="location" required />
 
-    <label for="propertyImage">Property Image:</label> 
-    <input type="file" id="propertyImage" accept="image/*" required> 
+      <label for="propertyImage">Property Image:</label>
+      <input type="file" id="propertyImage" accept="image/*" required />
 
-    <button type="submit" id="uploadButton">Upload Property</button> 
-   </form> 
+      <button type="submit" id="uploadButton">Upload Property</button>
+    </form>
 
-   <div class="success-message" id="successMessage" style="display:none;">
-     Property uploaded successfully! 
-   </div> 
-   <div class="error-message" id="errorMessage" style="display:none;">
-     Error uploading property. Please try again. 
-   </div> 
-  </div> 
+    <div class="success-message" id="successMessage" style="display:none;">
+      Property uploaded successfully!
+    </div>
+    <div class="error-message" id="errorMessage" style="display:none;">
+      Error uploading property. Please try again.
+    </div>
+  </div>
 
+  <!-- Load Supabase from CDN (UMD build) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // Backendless credentials and endpoints
-    const APP_ID = "C47C660A-86F5-425E-8548-2747CA67D530";
-    const REST_API_KEY = "28473621-4F3B-43A6-AA75-91890ACF1319";
-    // The data endpoint for the "Properties" table (Ensure it's case-sensitive)
-    const DATA_API_URL = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/data/Properties`;
+    // 1) Your Supabase project details
+    const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
 
-    document.getElementById('propertyForm').addEventListener('submit', function(event) {
+    // 2) Create a Supabase client
+    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+    // Grab form elements
+    const propertyForm = document.getElementById('propertyForm');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Handle form submission
+    propertyForm.addEventListener('submit', function(event) {
       event.preventDefault();
       uploadProperty();
     });
 
     async function uploadProperty() {
-      // Retrieve form values
-      const propertyName = document.getElementById('propertyName').value.trim();
-      const propertyType = document.getElementById('propertyType').value.trim();
-      const price = document.getElementById('price').value.trim();
-      const location = document.getElementById('location').value.trim();
-      const propertyImage = document.getElementById('propertyImage').files[0];
-
-      if (!propertyImage) {
-        showError("No image selected.");
-        return;
-      }
-
       try {
-        // Prepare a unique filename by prepending a timestamp
-        const timestamp = Date.now();
-        const filename = timestamp + "_" + propertyImage.name;
-        const fileUploadUrl = `https://api.backendless.com/${APP_ID}/${REST_API_KEY}/files/properties/${filename}`;
+        // Retrieve form values
+        const propertyName = document.getElementById('propertyName').value.trim();
+        const propertyType = document.getElementById('propertyType').value.trim();
+        const price = parseFloat(document.getElementById('price').value.trim());
+        const location = document.getElementById('location').value.trim();
+        const propertyImageFile = document.getElementById('propertyImage').files[0];
 
-        // Upload the image file to Backendless File Storage
-        const fileUploadResponse = await fetch(fileUploadUrl, {
-          method: 'POST',
-          headers: { "Content-Type": propertyImage.type },
-          body: propertyImage
-        });
-
-        if (!fileUploadResponse.ok) {
-          throw new Error("File upload failed");
+        if (!propertyImageFile) {
+          throw new Error('No image selected.');
         }
 
-        const fileURL = await fileUploadResponse.text(); // Get URL as text
+        // 1) Upload the image to Supabase Storage
+        //    Ensure you have a bucket named "property-images"
+        const fileName = `${Date.now()}_${propertyImageFile.name}`; // unique filename
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('property-images')
+          .upload(`images/${fileName}`, propertyImageFile);
 
-        // Construct the property data record with the image URL
-        const propertyData = {
-          name: propertyName,
-          type: propertyType,
-          price: parseFloat(price), // Ensure price is a number
-          location: location,
-          imageUrl: fileURL
-        };
-
-        // Insert the property record into the Backendless Data table
-        const dataResponse = await fetch(DATA_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(propertyData)
-        });
-
-        if (!dataResponse.ok) {
-          throw new Error("Failed to save property data");
+        if (uploadError) {
+          throw uploadError;
         }
 
-        console.log("Property uploaded successfully:", await dataResponse.json());
+        // The returned path can be stored in the DB
+        const imagePath = uploadData.path; // e.g., "images/1677604762123_photo.jpg"
 
-        showSuccess("Property uploaded successfully!");
-        document.getElementById('propertyForm').reset();
-      } catch (error) {
-        console.error("Error uploading property:", error);
-        showError(error.message);
+        // 2) Insert property details into the "Properties" table
+        //    Make sure your table columns match these fields:
+        //    (title, property_type, price, location, image_url)
+        const { data: insertData, error: insertError } = await supabase
+          .from('Properties')
+          .insert([
+            {
+              title: propertyName,
+              property_type: propertyType,
+              price: price,
+              location: location,
+              image_url: imagePath
+            }
+          ]);
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // If everything succeeded
+        showSuccess('Property uploaded successfully!');
+        propertyForm.reset();
+
+      } catch (err) {
+        console.error('Error uploading property:', err);
+        showError(err.message);
       }
     }
 
     function showSuccess(message) {
-      document.getElementById('successMessage').textContent = message;
-      document.getElementById('successMessage').style.display = "block";
-      document.getElementById('errorMessage').style.display = "none";
+      successMessage.textContent = message;
+      successMessage.style.display = 'block';
+      errorMessage.style.display = 'none';
     }
 
     function showError(message) {
-      document.getElementById('errorMessage').textContent = "Error: " + message;
-      document.getElementById('errorMessage').style.display = "block";
-      document.getElementById('successMessage').style.display = "none";
+      errorMessage.textContent = 'Error: ' + message;
+      errorMessage.style.display = 'block';
+      successMessage.style.display = 'none';
     }
-  </script> 
- </body>
+  </script>
+</body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
