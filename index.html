@@ -1,261 +1,173 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel - Property Upload</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #000;
-      color: #FFD700;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background-color: #000;
-      padding: 20px;
-      border-radius: 10px;
-      border: 1px solid #FFD700;
-    }
-    h2 {
-      text-align: center;
-      color: #FFD700;
-    }
-    label {
-      font-weight: bold;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #FFD700;
-      border-radius: 5px;
-      background-color: #222;
-      color: #FFD700;
-    }
-    button {
-      background-color: #FFD700;
-      color: #000;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:hover {
-      background-color: #e6c200;
-    }
-    .message {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    .success {
-      color: #00ff00;
-    }
-    .error {
-      color: #ff0000;
-    }
-    #propertyList {
-      margin-top: 30px;
-    }
-    .property-card {
-      border: 1px solid #FFD700;
-      border-radius: 5px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    .property-card img {
-      width: 100%;
-      max-height: 200px;
-      object-fit: cover;
-      margin-top: 5px;
-      border-radius: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Property</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .message { padding: 10px; margin-top: 10px; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .property-card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+        img { max-width: 100%; height: auto; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Upload New Property</h2>
+
+    <h2>Upload Property</h2>
+
     <form id="propertyForm">
-      <label for="propertyName">Property Name:</label>
-      <input type="text" id="propertyName" required>
+        <label>Property Name:</label>
+        <input type="text" id="propertyName" required><br><br>
 
-      <label for="propertyType">Property Type:</label>
-      <select id="propertyType" required>
-        <option value="">Select Type</option>
-        <option value="Apartment">Apartment</option>
-        <option value="Villa">Villa</option>
-        <option value="Townhouse">Townhouse</option>
-        <option value="Condominium">Condominium</option>
-      </select>
+        <label>Property Type:</label>
+        <input type="text" id="propertyType" required><br><br>
 
-      <label for="propertyDescription">Description:</label>
-      <textarea id="propertyDescription" rows="4" required></textarea>
+        <label>Description:</label>
+        <textarea id="propertyDescription" required></textarea><br><br>
 
-      <label for="price">Price:</label>
-      <input type="number" id="price" required>
+        <label>Price:</label>
+        <input type="number" id="price" required><br><br>
 
-      <label for="location">Location:</label>
-      <input type="text" id="location" required>
+        <label>Location:</label>
+        <input type="text" id="location" required><br><br>
 
-      <label for="propertyImage">Property Image:</label>
-      <input type="file" id="propertyImage" accept="image/*" required>
+        <label>Property Image:</label>
+        <input type="file" id="propertyImage" accept="image/*" required><br><br>
 
-      <button type="submit">Upload Property</button>
+        <button type="submit">Upload Property</button>
     </form>
 
-    <div class="message success" id="successMessage" style="display:none;">
-      Property uploaded successfully!
-    </div>
-    <div class="message error" id="errorMessage" style="display:none;">
-      Error uploading property. Please try again.
-    </div>
+    <div id="successMessage" class="message success"></div>
+    <div id="errorMessage" class="message error"></div>
 
     <h2>Property Listings</h2>
     <div id="propertyList"></div>
-  </div>
 
-  <!-- Load Supabase script first -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  
-  <!-- Ensure Supabase is initialized after the script is loaded -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      // Supabase credentials
-      const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
-      const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Supabase credentials
+            const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
+            const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
 
-      // Initialize Supabase
-      const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+            // Initialize Supabase
+            const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-      // DOM elements
-      const propertyForm = document.getElementById('propertyForm');
-      const successMessage = document.getElementById('successMessage');
-      const errorMessage = document.getElementById('errorMessage');
-      const propertyList = document.getElementById('propertyList');
+            // DOM elements
+            const propertyForm = document.getElementById('propertyForm');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const propertyList = document.getElementById('propertyList');
 
-      propertyForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        uploadProperty();
-      });
+            propertyForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // Prevent page refresh
 
-      async function uploadProperty() {
-        try {
-          const propertyName = document.getElementById('propertyName').value.trim();
-          const propertyType = document.getElementById('propertyType').value.trim();
-          const propertyDescription = document.getElementById('propertyDescription').value.trim();
-          const price = parseFloat(document.getElementById('price').value.trim());
-          const location = document.getElementById('location').value.trim();
-          const propertyImageFile = document.getElementById('propertyImage').files[0];
+                const propertyName = document.getElementById('propertyName').value.trim();
+                const propertyType = document.getElementById('propertyType').value.trim();
+                const propertyDescription = document.getElementById('propertyDescription').value.trim();
+                const price = parseFloat(document.getElementById('price').value.trim());
+                const location = document.getElementById('location').value.trim();
+                const propertyImageFile = document.getElementById('propertyImage').files[0];
 
-          if (!propertyImageFile) {
-            throw new Error('No image selected.');
-          }
+                if (!propertyName || !propertyType || !propertyDescription || !price || !location || !propertyImageFile) {
+                    showError("Please fill in all fields.");
+                    return;
+                }
 
-          const fileName = `${Date.now()}_${propertyImageFile.name}`;
-          const { data: uploadData, error: uploadError } = await supabase
-            .storage
-            .from('milenahomes')
-            .upload(`images/${fileName}`, propertyImageFile);
+                try {
+                    const fileName = `${Date.now()}_${propertyImageFile.name}`;
+                    const { data: uploadData, error: uploadError } = await supabase
+                        .storage
+                        .from('milenahomes')
+                        .upload(`images/${fileName}`, propertyImageFile, { cacheControl: '3600', upsert: false });
 
-          if (uploadError) {
-            throw uploadError;
-          }
+                    if (uploadError) throw uploadError;
 
-          const imagePath = uploadData.path;
+                    const { data: publicUrlData } = await supabase
+                        .storage
+                        .from('milenahomes')
+                        .getPublicUrl(`images/${fileName}`);
 
-          const { data: insertData, error: insertError } = await supabase
-            .from('Properties')
-            .insert([
-              {
-                title: propertyName,
-                property_type: propertyType,
-                description: propertyDescription,
-                price: price,
-                location: location,
-                image_url: imagePath
-              }
-            ]);
+                    const imageUrl = publicUrlData.publicUrl;
 
-          if (insertError) {
-            throw insertError;
-          }
+                    const { data: insertData, error: insertError } = await supabase
+                        .from('Properties')
+                        .insert([
+                            {
+                                title: propertyName,
+                                property_type: propertyType,
+                                description: propertyDescription,
+                                price: price,
+                                location: location,
+                                image_url: imageUrl
+                            }
+                        ]);
 
-          showSuccess('Property uploaded successfully!');
-          propertyForm.reset();
-          fetchProperties();
+                    if (insertError) throw insertError;
 
-        } catch (err) {
-          showError(err.message);
-        }
-      }
+                    showSuccess("Property uploaded successfully!");
+                    propertyForm.reset();
+                    fetchProperties();
 
-      function showSuccess(message) {
-        successMessage.textContent = message;
-        successMessage.style.display = 'block';
-        errorMessage.style.display = 'none';
-      }
+                } catch (err) {
+                    showError(err.message);
+                }
+            });
 
-      function showError(message) {
-        errorMessage.textContent = 'Error: ' + message;
-        errorMessage.style.display = 'block';
-        successMessage.style.display = 'none';
-      }
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+            }
 
-      async function fetchProperties() {
-        propertyList.innerHTML = '';
+            function showError(message) {
+                errorMessage.textContent = 'Error: ' + message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
 
-        try {
-          const { data, error } = await supabase
-            .from('Properties')
-            .select('*')
-            .order('id', { ascending: false });
+            async function fetchProperties() {
+                propertyList.innerHTML = '';
 
-          if (error) throw error;
+                try {
+                    const { data, error } = await supabase
+                        .from('Properties')
+                        .select('*')
+                        .order('id', { ascending: false });
 
-          if (!data || data.length === 0) {
-            propertyList.innerHTML = '<p>No properties found.</p>';
-            return;
-          }
+                    if (error) throw error;
 
-          data.forEach(async (property) => {
-            const { data: publicUrlData } = supabase
-              .storage
-              .from('milenahomes')
-              .getPublicUrl(property.image_url);
-            const imageUrl = publicUrlData.publicUrl;
+                    if (!data || data.length === 0) {
+                        propertyList.innerHTML = '<p>No properties found.</p>';
+                        return;
+                    }
 
-            const propertyCard = document.createElement('div');
-            propertyCard.className = 'property-card';
-            propertyCard.innerHTML = `
-              <h3>${property.title}</h3>
-              <p><strong>Type:</strong> ${property.property_type}</p>
-              <p><strong>Description:</strong> ${property.description}</p>
-              <img src="${imageUrl}" alt="${property.title}" />
-            `;
+                    data.forEach((property) => {
+                        const propertyCard = document.createElement('div');
+                        propertyCard.className = 'property-card';
+                        propertyCard.innerHTML = `
+                            <h3>${property.title}</h3>
+                            <p><strong>Type:</strong> ${property.property_type}</p>
+                            <p><strong>Description:</strong> ${property.description}</p>
+                            <p><strong>Price:</strong> ${property.price}</p>
+                            <p><strong>Location:</strong> ${property.location}</p>
+                            <img src="${property.image_url}" alt="${property.title}" />
+                        `;
+                        propertyList.appendChild(propertyCard);
+                    });
+                } catch (err) {
+                    propertyList.innerHTML = '<p>Error fetching properties.</p>';
+                }
+            }
 
-            propertyList.appendChild(propertyCard);
-          });
-        } catch (err) {
-          propertyList.innerHTML = '<p>Error fetching properties.</p>';
-        }
-      }
+            fetchProperties();
+        });
+    </script>
 
-      fetchProperties();
-    });
-  </script>
 </body>
 </html>
-
-
-
-
-
-
-
 
 
 
