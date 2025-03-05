@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Panel - Property Upload</title>
   <style>
@@ -81,7 +81,7 @@
     <h2>Upload New Property</h2>
     <form id="propertyForm">
       <label for="propertyName">Property Name:</label>
-      <input type="text" id="propertyName" required />
+      <input type="text" id="propertyName" required>
 
       <label for="propertyType">Property Type:</label>
       <select id="propertyType" required>
@@ -96,149 +96,174 @@
       <textarea id="propertyDescription" rows="4" required></textarea>
 
       <label for="price">Price:</label>
-      <input type="number" id="price" required />
+      <input type="number" id="price" required>
 
       <label for="location">Location:</label>
-      <input type="text" id="location" required />
+      <input type="text" id="location" required>
 
       <label for="propertyImage">Property Image:</label>
-      <input type="file" id="propertyImage" accept="image/*" required />
+      <input type="file" id="propertyImage" accept="image/*" required>
 
       <button type="submit">Upload Property</button>
     </form>
 
-    <div class="message success" id="successMessage" style="display:none;">Property uploaded successfully!</div>
-    <div class="message error" id="errorMessage" style="display:none;">Error uploading property. Please try again.</div>
+    <div class="message success" id="successMessage" style="display:none;">
+      Property uploaded successfully!
+    </div>
+    <div class="message error" id="errorMessage" style="display:none;">
+      Error uploading property. Please try again.
+    </div>
 
     <h2>Property Listings</h2>
     <div id="propertyList"></div>
   </div>
 
+  <!-- Load Supabase script first -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  
+  <!-- Ensure Supabase is initialized after the script is loaded -->
   <script>
-    const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
-    
-    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+    document.addEventListener("DOMContentLoaded", function() {
+      // Supabase credentials
+      const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
+      const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
 
-    const propertyForm = document.getElementById('propertyForm');
-    const successMessage = document.getElementById('successMessage');
-    const errorMessage = document.getElementById('errorMessage');
-    const propertyList = document.getElementById('propertyList');
+      // Initialize Supabase
+      const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-    propertyForm.addEventListener('submit', function(event) {
-      event.preventDefault();
-      uploadProperty();
-    });
+      // DOM elements
+      const propertyForm = document.getElementById('propertyForm');
+      const successMessage = document.getElementById('successMessage');
+      const errorMessage = document.getElementById('errorMessage');
+      const propertyList = document.getElementById('propertyList');
 
-    async function uploadProperty() {
-      try {
-        const propertyName = document.getElementById('propertyName').value.trim();
-        const propertyType = document.getElementById('propertyType').value.trim();
-        const propertyDescription = document.getElementById('propertyDescription').value.trim();
-        const price = parseFloat(document.getElementById('price').value.trim());
-        const location = document.getElementById('location').value.trim();
-        const propertyImageFile = document.getElementById('propertyImage').files[0];
+      propertyForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        uploadProperty();
+      });
 
-        if (!propertyImageFile) {
-          throw new Error('No image selected.');
-        }
+      async function uploadProperty() {
+        try {
+          const propertyName = document.getElementById('propertyName').value.trim();
+          const propertyType = document.getElementById('propertyType').value.trim();
+          const propertyDescription = document.getElementById('propertyDescription').value.trim();
+          const price = parseFloat(document.getElementById('price').value.trim());
+          const location = document.getElementById('location').value.trim();
+          const propertyImageFile = document.getElementById('propertyImage').files[0];
 
-        const fileName = `${Date.now()}_${propertyImageFile.name}`;
-        const { data: uploadData, error: uploadError } = await supabase
-          .storage
-          .from('Milena homes')
-          .upload(`images/${fileName}`, propertyImageFile);
+          if (!propertyImageFile) {
+            throw new Error('No image selected.');
+          }
 
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const imagePath = uploadData.path;
-
-        const { data: insertData, error: insertError } = await supabase
-          .from('Properties')
-          .insert([
-            {
-              title: propertyName,
-              property_type: propertyType,
-              description: propertyDescription,
-              price: price,
-              location: location,
-              image_url: imagePath
-            }
-          ]);
-
-        if (insertError) {
-          throw insertError;
-        }
-
-        showSuccess('Property uploaded successfully!');
-        propertyForm.reset();
-        fetchProperties();
-
-      } catch (err) {
-        showError(err.message);
-      }
-    }
-
-    function showSuccess(message) {
-      successMessage.textContent = message;
-      successMessage.style.display = 'block';
-      errorMessage.style.display = 'none';
-    }
-
-    function showError(message) {
-      errorMessage.textContent = 'Error: ' + message;
-      errorMessage.style.display = 'block';
-      successMessage.style.display = 'none';
-    }
-
-    async function fetchProperties() {
-      propertyList.innerHTML = '';
-
-      try {
-        const { data, error } = await supabase
-          .from('Properties')
-          .select('*')
-          .order('id', { ascending: false });
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          propertyList.innerHTML = '<p>No properties found.</p>';
-          return;
-        }
-
-        data.forEach(async (property) => {
-          const { data: publicUrlData } = supabase
+          const fileName = `${Date.now()}_${propertyImageFile.name}`;
+          const { data: uploadData, error: uploadError } = await supabase
             .storage
-            .from('Milena homes')
-            .getPublicUrl(property.image_url);
-          const imageUrl = publicUrlData.publicUrl;
+            .from('milenahomes')
+            .upload(`images/${fileName}`, propertyImageFile);
 
-          const propertyCard = document.createElement('div');
-          propertyCard.className = 'property-card';
-          propertyCard.innerHTML = `
-            <h3>${property.title}</h3>
-            <p><strong>Type:</strong> ${property.property_type}</p>
-            <p><strong>Description:</strong> ${property.description}</p>
-            <p><strong>Price:</strong> ${property.price}</p>
-            <p><strong>Location:</strong> ${property.location}</p>
-            <img src="${imageUrl}" alt="${property.title}" />
-          `;
+          if (uploadError) {
+            throw uploadError;
+          }
 
-          propertyList.appendChild(propertyCard);
-        });
-      } catch (err) {
-        propertyList.innerHTML = '<p>Error fetching properties.</p>';
+          const imagePath = uploadData.path;
+
+          const { data: insertData, error: insertError } = await supabase
+            .from('Properties')
+            .insert([
+              {
+                title: propertyName,
+                property_type: propertyType,
+                description: propertyDescription,
+                price: price,
+                location: location,
+                image_url: imagePath
+              }
+            ]);
+
+          if (insertError) {
+            throw insertError;
+          }
+
+          showSuccess('Property uploaded successfully!');
+          propertyForm.reset();
+          fetchProperties();
+
+        } catch (err) {
+          showError(err.message);
+        }
       }
-    }
 
-    fetchProperties();
+      function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+      }
+
+      function showError(message) {
+        errorMessage.textContent = 'Error: ' + message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      }
+
+      async function fetchProperties() {
+        propertyList.innerHTML = '';
+
+        try {
+          const { data, error } = await supabase
+            .from('Properties')
+            .select('*')
+            .order('id', { ascending: false });
+
+          if (error) throw error;
+
+          if (!data || data.length === 0) {
+            propertyList.innerHTML = '<p>No properties found.</p>';
+            return;
+          }
+
+          data.forEach(async (property) => {
+            const { data: publicUrlData } = supabase
+              .storage
+              .from('milenahomes')
+              .getPublicUrl(property.image_url);
+            const imageUrl = publicUrlData.publicUrl;
+
+            const propertyCard = document.createElement('div');
+            propertyCard.className = 'property-card';
+            propertyCard.innerHTML = `
+              <h3>${property.title}</h3>
+              <p><strong>Type:</strong> ${property.property_type}</p>
+              <p><strong>Description:</strong> ${property.description}</p>
+              <img src="${imageUrl}" alt="${property.title}" />
+            `;
+
+            propertyList.appendChild(propertyCard);
+          });
+        } catch (err) {
+          propertyList.innerHTML = '<p>Error fetching properties.</p>';
+        }
+      }
+
+      fetchProperties();
+    });
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
