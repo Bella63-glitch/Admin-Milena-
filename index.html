@@ -124,7 +124,7 @@
       const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
       const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
 
-      // Initialize Supabase using the UMD global variable
+      // Initialize Supabase client using the UMD global variable
       const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
       // DOM elements
@@ -134,7 +134,7 @@
       const propertyList = document.getElementById('propertyList');
 
       propertyForm.addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent default form submission (page refresh)
+        event.preventDefault(); // Prevent default form submission
         console.log("Form submit event triggered");
 
         // Get form values
