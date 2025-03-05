@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel - Property Upload (Supabase)</title>
+  <title>Admin Panel - Property Upload</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -26,10 +26,7 @@
     label {
       font-weight: bold;
     }
-    input[type="text"],
-    input[type="number"],
-    input[type="file"],
-    select {
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -50,19 +47,17 @@
     button:hover {
       background-color: #e6c200;
     }
-    .success-message,
-    .error-message {
+    .message {
       text-align: center;
       margin-top: 10px;
       font-weight: bold;
     }
-    .success-message {
+    .success {
       color: #00ff00;
     }
-    .error-message {
+    .error {
       color: #ff0000;
     }
-    /* Property listings styling */
     #propertyList {
       margin-top: 30px;
     }
@@ -97,6 +92,9 @@
         <option value="Condominium">Condominium</option>
       </select>
 
+      <label for="propertyDescription">Description:</label>
+      <textarea id="propertyDescription" rows="4" required></textarea>
+
       <label for="price">Price:</label>
       <input type="number" id="price" required />
 
@@ -106,50 +104,38 @@
       <label for="propertyImage">Property Image:</label>
       <input type="file" id="propertyImage" accept="image/*" required />
 
-      <button type="submit" id="uploadButton">Upload Property</button>
+      <button type="submit">Upload Property</button>
     </form>
 
-    <div class="success-message" id="successMessage" style="display:none;">
-      Property uploaded successfully!
-    </div>
-    <div class="error-message" id="errorMessage" style="display:none;">
-      Error uploading property. Please try again.
-    </div>
+    <div class="message success" id="successMessage" style="display:none;">Property uploaded successfully!</div>
+    <div class="message error" id="errorMessage" style="display:none;">Error uploading property. Please try again.</div>
 
     <h2>Property Listings</h2>
-    <div id="propertyList">
-      <!-- Uploaded property cards will appear here -->
-    </div>
+    <div id="propertyList"></div>
   </div>
 
-  <!-- Load Supabase JS library from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // Supabase project details (replace with your actual details)
     const supabaseUrl = 'https://aetcawszvlpbzxjgvojm.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGNhd3N6dmxwYnp4amd2b2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1MTkwMDgsImV4cCI6MjA1NjA5NTAwOH0.BAYjg845TY82BaxwS2pgbvE0cXrGe9HTWToCsw4XtLM';
     
-    // Create the Supabase client
     const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-    // DOM elements
     const propertyForm = document.getElementById('propertyForm');
     const successMessage = document.getElementById('successMessage');
     const errorMessage = document.getElementById('errorMessage');
     const propertyList = document.getElementById('propertyList');
 
-    // Form submission handler
     propertyForm.addEventListener('submit', function(event) {
       event.preventDefault();
       uploadProperty();
     });
 
-    // Function to upload a property (image + details)
     async function uploadProperty() {
       try {
-        // Retrieve form values
         const propertyName = document.getElementById('propertyName').value.trim();
         const propertyType = document.getElementById('propertyType').value.trim();
+        const propertyDescription = document.getElementById('propertyDescription').value.trim();
         const price = parseFloat(document.getElementById('price').value.trim());
         const location = document.getElementById('location').value.trim();
         const propertyImageFile = document.getElementById('propertyImage').files[0];
@@ -158,27 +144,25 @@
           throw new Error('No image selected.');
         }
 
-        // 1) Upload the image to Supabase Storage (bucket: "property-images")
-        const fileName = `${Date.now()}_${propertyImageFile.name}`; // unique filename
+        const fileName = `${Date.now()}_${propertyImageFile.name}`;
         const { data: uploadData, error: uploadError } = await supabase
           .storage
-          .from('property-images')
+          .from('Milena homes')
           .upload(`images/${fileName}`, propertyImageFile);
 
         if (uploadError) {
           throw uploadError;
         }
 
-        // Get the path returned by Supabase Storage
         const imagePath = uploadData.path;
 
-        // 2) Insert the property record into the "Properties" table
         const { data: insertData, error: insertError } = await supabase
           .from('Properties')
           .insert([
             {
               title: propertyName,
               property_type: propertyType,
+              description: propertyDescription,
               price: price,
               location: location,
               image_url: imagePath
@@ -189,14 +173,11 @@
           throw insertError;
         }
 
-        // Show success message and reset form
         showSuccess('Property uploaded successfully!');
         propertyForm.reset();
-        // Refresh the property listings
         fetchProperties();
 
       } catch (err) {
-        console.error('Error uploading property:', err);
         showError(err.message);
       }
     }
@@ -213,59 +194,79 @@
       successMessage.style.display = 'none';
     }
 
-    // Function to fetch and display properties from Supabase
     async function fetchProperties() {
-      propertyList.innerHTML = ''; // Clear existing list
+      propertyList.innerHTML = '';
 
       try {
         const { data, error } = await supabase
           .from('Properties')
           .select('*')
           .order('id', { ascending: false });
-          
-        if (error) {
-          throw error;
-        }
 
-        if (data.length === 0) {
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
           propertyList.innerHTML = '<p>No properties found.</p>';
           return;
         }
 
-        // Loop through each property and display it
-        data.forEach((property) => {
-          // Get public URL for the image stored in Supabase Storage
+        data.forEach(async (property) => {
           const { data: publicUrlData } = supabase
             .storage
-            .from('property-images')
+            .from('Milena homes')
             .getPublicUrl(property.image_url);
           const imageUrl = publicUrlData.publicUrl;
 
-          // Create a card element for the property
           const propertyCard = document.createElement('div');
           propertyCard.className = 'property-card';
-
           propertyCard.innerHTML = `
             <h3>${property.title}</h3>
-            <p>Type: ${property.property_type}</p>
-            <p>Price: ${property.price}</p>
-            <p>Location: ${property.location}</p>
+            <p><strong>Type:</strong> ${property.property_type}</p>
+            <p><strong>Description:</strong> ${property.description}</p>
+            <p><strong>Price:</strong> ${property.price}</p>
+            <p><strong>Location:</strong> ${property.location}</p>
             <img src="${imageUrl}" alt="${property.title}" />
           `;
 
           propertyList.appendChild(propertyCard);
         });
       } catch (err) {
-        console.error('Error fetching properties:', err);
         propertyList.innerHTML = '<p>Error fetching properties.</p>';
       }
     }
 
-    // Fetch properties when the page loads
     fetchProperties();
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
